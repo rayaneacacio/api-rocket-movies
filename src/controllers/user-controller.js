@@ -5,23 +5,18 @@ const AppError = require("../utils/AppError");
 const DiskStorage = require("../providers/DiskStorage");
 const knex = require("../database/knex");
 const searchOldFiles = require("../providers/SearchOldFiles.js");
+const UserRepository = require("../repositories/UserRepository");
+const UserCreateService = require("../services/UserCreateService");
 
 class UserController{
   async create(request, response){
     const { name, email, password } = request.body;
 
-    const database = await sqliteConnection();
+    const userRepository = new UserRepository;
+    const userCreateService = new UserCreateService(userRepository);
+    await userCreateService.execute({ name, email, password });
 
-    const checkUser = await database.get("SELECT * FROM users WHERE email = (?)", [ email ]);
-    if(checkUser){
-      throw new AppError("Esse email já está em uso");
-    }
-
-    const hashedPassword = await hash(password, 8);
-    
-    await database.run("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", [ name, email, hashedPassword ]);
-
-    return response.json();
+    return response.status(201).json();
   }
 
   async update(request, reponse){
